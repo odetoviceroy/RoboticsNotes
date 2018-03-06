@@ -11,7 +11,7 @@ class Coordinate:
         self.y = y
 
 # get_arm_config: this function takes in the lengths of the robot arms, and the coordinate of the end effector
-# Output: returns the angle at which the robot arms are positioned by
+# Output: returns the angle at which the robot arms are positioned by [theta1, theta2]
 def get_arm_config(length1, length2, coord):
     cos_theta2 = m.sqrt(m.pow(coord.x, 2) + m.pow(coord.y, 2)) - (m.pow(length1, 2)) \
                  + (m.pow(length2, 2))
@@ -51,85 +51,65 @@ def robot_draw_circle(radius, center):
         x_vals.append(center.x + radius * m.cos(theta[i]))
         y_vals.append(center.y + radius * m.sin(theta[i]))
 
-    '''
-    print "\nTime List: ", time # Used for debugging
-    print "\nTheta List: ", theta
-    print "\nX-VALUES: ", x_vals
-    print "\nY-VALUES: ", y_vals
-    '''
     return [x_vals, y_vals]
 
-'''
-fig = plt.figure() 
-ax = plt.axes(xlim = (-10, 10), ylim= (-10, 10))
-line, = ax.plot([],[], lw = 2)
+fig = plt.figure()
+ax = plt.axes(xlim = (-8,8), ylim = (-8,8))
+N = 3
+points = ax.plot(*([[], []]*N), color = 'green', linestyle ='--', marker = 'o')
 
 def init():
-    line.set_data([],[])
-    return line,
-'''
-
-fig = plt.figure()
-ax = plt.axes(xlim=(-10, 10), ylim=(0, 20))
-N = 3
-points = ax.plot( *([[], []]*N), marker="o")
-
-def init():    
     for line in points:
-        line.set_data([], [])
+        line.set_data([],[])
     return points
 
-def animate(x1,y1, x2, y2):
+def animate(i, second_joint_config, end_effector_config):
     points[0].set_data([0],[0])
-    points[1].set_data([x1],[y1])
-    points[2].set_data([[x2],[y2]])
+    points[1].set_data([[second_joint_config[i][0]],[second_joint_config[i][1]]])
+    points[2].set_data([[end_effector_config[i][0]],[end_effector_config[i][1]]])
+    print "SECOND POINT POSITION: (", second_joint_config[i][0], ",", second_joint_config[i][1], ")"
+    print "END EFFECTOR POSITION: (", second_joint_config[i][0], ",", second_joint_config[i][1], ")"
     return points
 
 # robot_trace_circle: function that takes in two lengths for the robot arm, and x_vals and y_vals generated from robot_draw_circle
 # Output is the final animation for problem 2
 def robot_trace_circle(length1, length2, x_vals, y_vals):
-    arm_config = []
-
-    first_joint_config =[]
-    second_joint_config = []
-    end_effector_config = []
+    arm_config = [] # master list of configurations of all arm positions
+    # setup:  [ [[0,x11,x12], [0,y11,y12]] , [[0,x12,x22], [0,y12,y22]], ...]
+    first_joint_config =[] # master list of configurations of the first joint, all contain zeroes
+    second_joint_config = [] # second joint
+    end_effector_config = [] # end effector
     for i in range(0, len(x_vals) - 1):
         [theta1, theta2] = get_arm_config(length1, length2, Coordinate(x_vals[i], y_vals[i]))
         [x,y] = generate_robot_plotpts(theta1, theta2, length1, length2)
         arm_config.append([x,y])
-    print arm_config, "\n", len(arm_config)
-
     for setup in arm_config:
         first_joint_config.append([setup[0][0], setup[1][0]])
         second_joint_config.append([setup[0][1], setup[1][1]])
-        end_effector_config.append([setup[0][2], setup[1][2]])
-            
-
+    for i in range(0, len(x_vals)):
+        end_effector_config.append([x_vals[i], y_vals[i]])        
     print first_joint_config, "\n", len(first_joint_config)
     print second_joint_config, "\n", len(first_joint_config)
     print end_effector_config, "\n", len(first_joint_config)
+    
+    ani = animation.FuncAnimation(fig, animate, init_func=init, frames=50, fargs=(
+        second_joint_config,
+        end_effector_config,
+        ), interval=100, blit=True)
 
-    '''
-    a = animate(second_joint_config[0][0], second_joint_config[0][1], end_effector_config[0][0],
-        end_effector_config[0][1])
-    '''
-    plt.plot(x_vals,y_vals, 'ro-')
-    plt.ylabel('some numbers')
+    fig.suptitle('ROBOT DRAW CIRCLE', fontsize=20)
     plt.show()
-
 
 if __name__ == "__main__": # main function
     length1 = 3
     length2 = 6
-
     if sys.argv[1] == "p1": # Triggered by: python get_robot_config.py p1
         coord = Coordinate(2,4)
         [theta1, theta2] = get_arm_config(length1, length2, coord)
         [x,y] = generate_robot_plotpts(theta1, theta2, length1, length2)
         robot_draw_arm(x,y)
-
     if sys.argv[1] == "p2": # Triggered by: python get_robot_config.py p1
-        center = Coordinate(2,4)
-        radius = 3
+        center = Coordinate(3,4)
+        radius = 2
         [x_vals, y_vals] = robot_draw_circle(radius, center)
         robot_trace_circle(length1, length2, x_vals, y_vals)
